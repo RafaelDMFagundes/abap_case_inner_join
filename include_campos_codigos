@@ -1,0 +1,291 @@
+*Aqui eu fiz todos os select, usando inner join, e toda a parte do ALV
+
+*&~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+*& Include          ZR_FSW_CASE_INNER_F01
+*&~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+
+
+*&---------------------------------------------------------------------*
+*& Form zf_buscar_dados
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM zf_buscar_dados .
+  PERFORM zf_selecionar_dados.
+  PERFORM zf_processar_dados.
+
+ENDFORM.
+
+FORM zf_selecionar_dados.
+
+********* Selecionar Dados *************************
+
+  SELECT  j_1bnfdoc~direct,
+          j_1bnfdoc~Docnum,
+          j_1bnfdoc~pstdat,
+          j_1bnfdoc~nfenum,
+          j_1bnfdoc~cgc,
+          j_1bnfdoc~name1,
+          j_1bnfdoc~regio,
+          j_1bnfdoc~nftot,
+          j_1bnflin~matnr,
+          j_1bnflin~itmnum,
+          j_1bnflin~maktx,
+          j_1bnflin~nbm,
+          j_1bnflin~cfop,
+          j_1bnflin~menge,
+          j_1bnflin~netpr,
+          j_1bnflin~netwr,
+          j_1bnfstx~base,
+          j_1bnfstx~taxval
+*        J_1BNFSTX~BASE,
+*        J_1BNFSTX~TAXVAL
+    FROM j_1bnfdoc AS j_1bnfdoc
+    INNER JOIN j_1bnflin AS j_1bnflin    ON  j_1bnflin~docnum = j_1bnfdoc~Docnum
+    INNER JOIN j_1bnfstx AS j_1bnfstx    ON  j_1bnfstx~docnum = j_1bnfdoc~Docnum
+                                         AND j_1bnfstx~itmnum = j_1bnflin~itmnum
+         WHERE j_1bnfdoc~direct = '2'
+         AND  docdat IN @s_docdat
+         AND  pstdat IN @s_pstdat
+         AND  nfenum IN @s_nfenum
+         AND  bukrs  = @p_bukrs
+         AND  branch = @p_branch
+         AND  regio  IN @s_regio
+         AND cfop   = @p_cfop
+         AND taxsit = @p_taxsit
+         AND werks  = @p_werks
+         AND mwskz  IN @s_mwskz
+         AND taxtyp  = @p_taxtyp
+         AND  cancel = @p_cancel
+
+         INTO TABLE @DATA(gt_saida).
+
+  IF sy-subrc IS INITIAL.
+
+
+    SELECT j_1bnfdoc~direct,
+           j_1bnfdoc~pstdat,
+           j_1bnfdoc~nfenum,
+
+           j_1bnflin~matnr,
+           j_1bnflin~werks,
+
+           j_1bnflin~cfop,
+           j_1bnflin~menge,
+           j_1bnflin~netpr,
+           j_1bnflin~netwr,
+           j_1bnfstx~base,
+           j_1bnfstx~rate
+      FROM j_1bnfdoc AS j_1bnfdoc
+      INNER JOIN j_1bnflin AS j_1bnflin     ON j_1bnflin~docnum = j_1bnfdoc~Docnum
+      INNER JOIN J_1BNFstx AS J_1BNFstx     ON j_1bnfstx~docnum = j_1bnfdoc~Docnum
+                                            AND j_1bnfstx~itmnum = j_1bnflin~itmnum
+     FOR ALL ENTRIES IN @gt_saida
+
+           WHERE j_1bnfdoc~direct = '1'
+           AND j_1bnfdoc~pstdat  <=  @s_pstdat-low
+           AND j_1bnflin~matnr    =  @gt_saida-matnr
+           AND j_1bnflin~werks    =  @p_werks
+           AND j_1bnflin~cfop     =  @p_cfop_e
+
+           INTO TABLE @DATA(gt_entrada).
+
+  ENDIF.
+  SORT gt_saida BY docnum itmnum.
+
+
+  LOOP AT gt_saida INTO DATA(gs_saida).
+
+    gs_final-direct  = '2'.
+    gs_final-Docnum  = gs_saida-Docnum.
+    gs_final-pstdat  = gs_saida-pstdat.
+    gs_final-nfenum  = gs_saida-nfenum.
+    gs_final-cgc     = gs_saida-cgc   .
+    gs_final-name1   = gs_saida-name1 .
+    gs_final-regio   = gs_saida-regio .
+    gs_final-nftot   = gs_saida-nftot .
+    gs_final-matnr   = gs_saida-matnr .
+    gs_final-itmnum  = gs_saida-itmnum.
+    gs_final-maktx   = gs_saida-maktx .
+    gs_final-nbm     = gs_saida-nbm   .
+    gs_final-cfop    = gs_saida-cfop  .
+    gs_final-menge   = gs_saida-menge .
+    gs_final-netpr   = gs_saida-netpr .
+    gs_final-netwr   = gs_saida-netwr .
+    IF p_taxtyp = 'ICM3'.
+      gs_final-base_icm3    = gs_saida-base  .
+      gs_final-taxval_icm3  = gs_saida-taxval.
+    ELSEIF p_taxtyp = 'ICS3'.
+      gs_final-base_ics3    = gs_saida-base  .
+      gs_final-taxval_ics3  = gs_saida-taxval.
+    ENDIF.
+
+    APPEND gs_final TO gt_final.
+    CLEAR gs_final.
+  ENDLOOP.
+
+
+  IF sy-subrc IS INITIAL.
+
+  ENDIF.
+
+
+  SORT gt_final BY matnr werks ASCENDING pstdat DESCENDING.
+
+  LOOP AT gt_final ASSIGNING FIELD-SYMBOL(<fs_entrada>).
+    IF sy-subrc IS INITIAL.
+
+      READ TABLE gt_entrada
+      INTO DATA(gs_entrada)
+      WITH KEY matnr = <fs_entrada>-matnr werks = p_werks.
+
+      <fs_entrada>-direct_e = gs_entrada-direct.
+      <fs_entrada>-pstdat_e = gs_entrada-pstdat.
+      <fs_entrada>-nfenum_e = gs_entrada-nfenum.
+
+      <fs_entrada>-cfop_e = gs_entrada-cfop.
+      <fs_entrada>-menge_e = gs_entrada-menge.
+      <fs_entrada>-netpr_e = gs_entrada-netpr.
+      <fs_entrada>-netwr_e = gs_entrada-netwr.
+      <fs_entrada>-base_e = gs_entrada-base.
+      <fs_entrada>-rate_e = gs_entrada-rate.
+
+********* calculo dos imposts ******************
+
+      <fs_entrada>-icm3_st            =  <fs_entrada>-base_e * <fs_entrada>-rate_e.
+      <fs_entrada>-icm3_st_unit       =  <fs_entrada>-icm3_st / <fs_entrada>-menge_e.
+      <fs_entrada>-vlr_st_adjudicado  =  <fs_entrada>-icm3_st_unit * <fs_entrada>-menge.
+
+    ENDIF.
+    CLEAR gs_final.
+  ENDLOOP.
+
+***********cancel da tela de seleção*****************************
+
+  IF p_cancel IS NOT INITIAL.
+    gs_ran_cancel-sign   = 'I'.
+    gs_ran_cancel-option = 'EQ'.
+    gs_ran_cancel-low    = 'X'.
+
+    APPEND gs_ran_cancel TO gr_cancel.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form zf_processar_dados
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM zf_processar_dados .
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& form zf_layout
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM zf_layout .
+
+  gs_layout-grid_title = 'relatório '."titulo do relatório
+  gs_layout-zebra      = 'x'.         "linhas do relatório zebradas
+  gs_layout-cwidth_opt = 'x'.         "otimização das colunas do relatório
+  gs_layout-info_fname = 'color'. "nome da coluna na tabela
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& form zf_fieldcat
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM zf_fieldcat .
+
+  DATA: lt_fieldcat TYPE slis_t_fieldcat_alv.
+  DATA: ls_fieldcat TYPE slis_fieldcat_alv.
+
+  CALL FUNCTION 'REUSE_ALV_FIELDCATALOG_MERGE'
+    EXPORTING
+      i_internal_tabname     = 'gt_final'
+      i_structure_name       = 'zst_fsw_case_inner_final'
+    CHANGING
+      ct_fieldcat            = lt_fieldcat
+    EXCEPTIONS
+      inconsistent_interface = 1
+      program_error          = 2
+      OTHERS                 = 3.
+  IF sy-subrc = 0.
+
+    LOOP AT lt_fieldcat INTO ls_fieldcat.
+*
+      gs_fieldcat-fieldname = ls_fieldcat-fieldname.
+      gs_fieldcat-tabname   = ls_fieldcat-tabname.
+      gs_fieldcat-scrtext_l = ls_fieldcat-seltext_l.
+      gs_fieldcat-scrtext_m = ls_fieldcat-seltext_m.
+      gs_fieldcat-scrtext_s = ls_fieldcat-seltext_s.
+
+
+      IF gs_fieldcat-fieldname = 'docnum'.
+        gs_fieldcat-no_out = 'x'.
+
+      ENDIF.
+      IF gs_fieldcat-fieldname = 'werks'.
+        gs_fieldcat-no_out = 'x'.
+
+      ENDIF.
+
+      IF gs_fieldcat-fieldname = 'itmnum'.
+        gs_fieldcat-no_out = 'x'.
+
+      ENDIF.
+
+      APPEND gs_fieldcat TO gt_fieldcat.
+      CLEAR gs_fieldcat.
+      gs_layout-info_fname = 'color'. "nome da coluna na tabela
+    ENDLOOP.
+  ENDIF.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& form zf_show_alv
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM zf_show_alv .
+  DATA: go_container  TYPE REF TO cl_gui_custom_container.
+  DATA: go_alv        TYPE REF TO cl_gui_alv_grid.
+
+  CREATE OBJECT go_container
+    EXPORTING
+      container_name = 'CONTAINER'.
+
+  CREATE OBJECT go_alv
+    EXPORTING
+      i_parent = go_container.
+
+  CALL METHOD go_alv->set_table_for_first_display
+    EXPORTING
+      is_layout                     = gs_layout
+    CHANGING
+      it_outtab                     = gt_final
+      it_fieldcatalog               = gt_fieldcat
+    EXCEPTIONS
+      invalid_parameter_combination = 1
+      program_error                 = 2
+      too_many_lines                = 3
+      OTHERS                        = 4.
+ENDFORM.
