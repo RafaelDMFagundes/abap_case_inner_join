@@ -1,0 +1,57 @@
+*&---------------------------------------------------------------------*
+*& Include          ZR_FSW_CASE_INNER_TOP
+*&---------------------------------------------------------------------*
+
+TYPES:
+  BEGIN OF ty_doc,
+    bukrs  TYPE j_1bnfdoc-bukrs,
+    branch TYPE j_1bnfdoc-branch,
+    pstdat TYPE j_1bnfdoc-pstdat,
+    docdat TYPE j_1bnfdoc-docdat,
+    nfenum TYPE j_1bnfdoc-nfenum,
+    regio  TYPE j_1bnfdoc-regio,
+  END OF ty_doc,
+
+  BEGIN OF ty_flin,
+    cfop   TYPE j_1bnflin-cfop,
+    werks  TYPE j_1bnflin-werks,
+    mwskz  TYPE j_1bnflin-mwskz,
+    cfop_e TYPE j_1bnflin-cfop,
+    taxsit TYPE j_1bnflin-taxsit,
+  END OF ty_flin,
+
+  BEGIN OF ty_fstx,
+    taxtyp   TYPE j_1bnfstx-taxtyp,
+    taxtyp_e TYPE j_1bnfstx-taxtyp,
+  END OF ty_fstx.
+
+************************************************************
+*----------- Declarações estrutura interna ----------------
+************************************************************
+
+DATA: gt_doc   TYPE TABLE OF ty_doc,
+      gt_flin  TYPE TABLE OF ty_flin,
+      gt_fstx  TYPE TABLE OF ty_fstx,
+      gt_final TYPE TABLE OF zst_fsw_case_inner_final,
+      gt_fieldcat  TYPE lvc_t_fcat.
+
+************************************************************
+*----------- Declarações estrutura global ----------------
+************************************************************
+
+DATA: gs_doc   TYPE  ty_doc,
+      gs_flin  TYPE  ty_flin,
+      gs_fstx  TYPE  ty_fstx,
+      gs_final TYPE  zst_fsw_case_inner_final,
+      gr_cancel   TYPE RANGE OF j_1bnfdoc-cancel,
+      gs_ran_cancel  LIKE LINE OF gr_cancel.
+
+
+*---------------------------------------------------------------------
+***************DECLARAÇÃO DE TABELAS ALV*****************************
+*---------------------------------------------------------------------
+DATA: "ariáveis utilizadas no ALV
+  gs_fieldcat TYPE lvc_s_fcat,
+  gs_sort     TYPE lvc_s_sort,
+  gs_layout   TYPE lvc_s_layo,
+  gs_print    TYPE lvc_s_prnt.
