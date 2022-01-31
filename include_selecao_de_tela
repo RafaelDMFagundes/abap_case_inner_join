@@ -1,0 +1,37 @@
+*&---------------------------------------------------------------------*
+*& Include          ZR_FSW_CASE_INNER_SRC
+*&---------------------------------------------------------------------*
+
+SELECTION-SCREEN BEGIN OF BLOCK b1 WITH FRAME TITLE TEXT-001.
+
+  PARAMETERS: p_bukrs       TYPE     j_1bnfdoc-bukrs OBLIGATORY,
+              p_branch      TYPE     j_1bnfdoc-branch OBLIGATORY.
+
+  SELECT-OPTIONS: s_pstdat   FOR     gs_doc-pstdat OBLIGATORY,
+                  s_docdat   FOR     gs_doc-docdat NO INTERVALS NO-EXTENSION,
+                  s_nfenum   FOR     gs_doc-nfenum NO INTERVALS NO-EXTENSION.
+
+  PARAMETERS: p_cfop        TYPE     j_1bnflin-cfop OBLIGATORY,
+              p_werks       TYPE     J_1BNFLIN-WERKS OBLIGATORY.
+
+  SELECT-OPTIONS: s_mwskz    FOR     gs_FLIN-MWSKZ NO INTERVALS NO-EXTENSION.
+
+  PARAMETERS: p_taxtyp      TYPE     J_1BNFSTX-TAXTYP OBLIGATORY,
+              p_taxsit      TYPE     J_1BNFLIN-TAXSIT OBLIGATORY.
+
+  SELECT-OPTIONS: s_regio    FOR     gs_DOC-REGIO NO INTERVALS NO-EXTENSION.
+
+SELECTION-SCREEN END OF BLOCK b1.
+
+SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE TEXT-002.
+
+  PARAMETERS: p_cfop_e      TYPE     J_1BNFLIN-CFOP OBLIGATORY,
+              p_taxt_e      TYPE     J_1BNFSTX-TAXTYP OBLIGATORY.
+
+SELECTION-SCREEN END OF BLOCK b2.
+
+SELECTION-SCREEN BEGIN OF BLOCK b3 WITH FRAME TITLE TEXT-003.
+
+  PARAMETERS: p_cancel TYPE j_1bnfdoc-cancel AS CHECKBOX DEFAULT 'x'.
+
+SELECTION-SCREEN END OF BLOCK b3.
