@@ -2,6 +2,8 @@
 *& Include          ZR_FSW_CASE_INNER_TOP
 *&---------------------------------------------------------------------*
 
+* Include para criar todas as declarações do programa.
+
 TYPES:
   BEGIN OF ty_doc,
     bukrs  TYPE j_1bnfdoc-bukrs,
